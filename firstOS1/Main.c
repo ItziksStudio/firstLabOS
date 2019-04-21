@@ -29,15 +29,58 @@ int main()
 	}
 	numberOflib = i;
 
-	for (int j = 0; j < numberOflib; j++) printf("%s", libs[i]);
-	while (1);
+	puts("Please Enter Command: ");
+	gets(commandPath);
 
 	//loop until leave {
-		
-		//get and cut command
+	while (strcmp(command, "leave") != 0) {
 
-		//call child to execute
+		//cut command
+		lastStr = strtok(command, " ");
+		params[0] = (char*)malloc(sizeof(char)*(strlen(lastStr) + 1));
+		strcpy(params[0], lastStr);
+		i = 1;
+		while ((lastStr = strtok(NULL, " ")) != NULL)
+		{
+			params[i] = (char*)malloc(sizeof(char)*(strlen(lastStr) + 1));
+			strcpy(params[i], lastStr);
+			i++;
+		}
+		params[i] = NULL;
 
+		//check if first is relative
+		if ((pid = fork()) == 0) {
+			if (params[0][0] == '/' ||
+				(strlen(params[0]) >= 2 &&
+					params[0][0] == '.' &&
+					params[0][1] == '/'
+					) ||
+					(strlen(params[0]) >= 3 &&
+						params[0][0] == '.' &&
+						params[0][1] == '.' &&
+						params[0][2] == '/'
+						)
+				) execv(params[0], params);
+			else {
+				for (i = 0; i < amountOfLib; i++) {
+					commandPath = libs[i];
+					strcat(commandPath, "/");
+					strcat(commandPath, params[0]);
+					execv(commandPath, params);
+				}
+				puts("command not found in PATH");
+				exit(1);
+			}
+		} else {
+			wait(&stat);
+			if (stat != 0)
+			{
+				puts("Command Doesn't exist.\n");
+			}
+		}
+		puts("Please Enter Command: ");
+		gets(commandPath);
+	}
 	//}
 
 }
