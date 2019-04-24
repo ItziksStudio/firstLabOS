@@ -1,36 +1,33 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
-#define MYCOMMAND_LEN   1000
-#define MYNUM_OF_PARAMS 500
+#define MYCOMMAND_LEN   100
+#define MYNUM_OF_PARAMS 50
+
+extern char **environ;
 
 int main()
 {
-	int i = 0, pid, stat, amountOfLib;
-	char command[MYCOMMAND_LEN];
+	int i = 0, j, pid, stat, amountOfLib = 0 ,numofparams;
+	char *command;
 	char *params[MYNUM_OF_PARAMS];
 	char *path, *lastStr;
 	char *libs[100];
 	int numberOflib = 0;
-	char *commandPath;
+	char commandPath[20], *envp[1];
+
 
 	//cut path
-	path = getenv("PATH");
-	lastStr = strtok(path, ":");
-	libs[0] = (char*)malloc(sizeof(char)*strlen(lastStr) + 1);
-	strcpy(libs[0], lastStr);
-	i = 1;
-	while (lastStr = strtok(NULL, ":")) {
-		libs[i] = (char*)malloc(sizeof(char)*strlen(lastStr) + 1);
-		strcpy(libs[i], lastStr);
-		i++;
-		numberOflib = i;
-	}
-	numberOflib = i;
+	path = (char*)malloc(sizeof(char)*strlen(getenv("PATH"))+1);
+	strcpy(path,getenv("PATH"));
+
 
 	puts("Please Enter Command: ");
-	gets(commandPath);
+	command = (char*)malloc(sizeof(char)*MYCOMMAND_LEN);
+	rewind(stdin);
+	gets(command);
 
 	//loop until leave {
 	while (strcmp(command, "leave") != 0) {
@@ -47,6 +44,7 @@ int main()
 			i++;
 		}
 		params[i] = NULL;
+		numofparams = i;
 
 		//check if first is relative
 		if ((pid = fork()) == 0) {
@@ -60,27 +58,28 @@ int main()
 						params[0][1] == '.' &&
 						params[0][2] == '/'
 						)
-				) execv(params[0], params);
+				) { execv(params[0], params);}
 			else {
-				for (i = 0; i < amountOfLib; i++) {
-					commandPath = libs[i];
+
+				for (lastStr = strtok(path, ":"); lastStr != NULL ; lastStr = strtok(NULL, ":")) {
+                    strcpy(commandPath, lastStr);
 					strcat(commandPath, "/");
 					strcat(commandPath, params[0]);
+
+                    setenv("PATH", lastStr,1);
+
 					execv(commandPath, params);
 				}
 				puts("command not found in PATH");
 				exit(1);
 			}
 		} else {
-			wait(&stat);
-			if (stat != 0)
-			{
-				puts("Command Doesn't exist.\n");
-			}
+            wait(0);
 		}
 		puts("Please Enter Command: ");
-		gets(commandPath);
+		rewind(stdin);
+        gets(command);
 	}
 	//}
-
+exit(0);
 }
